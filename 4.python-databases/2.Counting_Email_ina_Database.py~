@@ -1,0 +1,37 @@
+import sqlite3
+import re
+
+conn = sqlite3.connect('emaildb.sqlite')
+cur = conn.cursor()
+
+cur.execute('''
+DROP TABLE IF EXISTS Counts''')
+
+cur.execute('''
+CREATE TABLE Counts (org TEXT, count INTEGER)''')
+dic = dict()
+fname = raw_input('Enter file name: ')
+if ( len(fname) < 1 ) : fname = 'mbox.txt'
+fh = open(fname)
+for line in fh:
+    if not line.startswith('From: ') : continue
+    pieces = line.split()
+    email = pieces[1]
+    n = email.split('@')
+    org = n[-1]
+    dic[org] = dic.get(org, 0) + 1
+    
+# https://www.sqlite.org/lang_select.html
+for item in dic:
+    cur.execute('''INSERT INTO Counts (org, count) 
+                VALUES ( ?, ? )''', ( item, dic[item], ) )
+sqlstr = 'SELECT org, count FROM Counts ORDER BY count DESC LIMIT 10'
+
+print
+print "Counts:"
+for row in cur.execute(sqlstr) :
+    print str(row[0]), row[1]
+
+cur.close()
+
+
